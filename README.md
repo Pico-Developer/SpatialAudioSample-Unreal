@@ -1,8 +1,7 @@
 # SpatialAudioSample-Unreal
-Demo for Pico spatial audio sdk Unreal plugin
+Demo for Pico spatial audio sdk Unreal plugin.
 
-## BasicSample-Unreal
-For detailed steps, please refer to PICO Developer Documentation > Quickstart > Quickstart with demo
+For detailed steps, please refer to [PICO Developer Documentation](https://developer-global.pico-interactive.com/document/ue4) > Quickstart > Quickstart with demo
 For SDK access,please refer to Pico Unreal Integration SDK.
 | Name  | Version    |
 | ----  |  ----      |
