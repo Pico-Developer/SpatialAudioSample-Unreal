@@ -6,7 +6,7 @@ For SDK access,please refer to Pico Unreal Integration SDK.
 | Name  | Version    |
 | ----  |  ----      |
 | Unreal Engine | 4.24-4.27 |
-| Pico Unity Integration SDK | Not restricted |
+| Pico UE Integration SDK | Not restricted |
 ## Description
 This is the demo project for Pico Spatial Audio Rendering SDK, in which you can find 4 maps:
 1. Free field, demonstrating spatialization of a point source;
