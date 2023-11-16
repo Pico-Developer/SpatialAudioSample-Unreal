@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
 
 using UnrealBuildTool;
 using System.IO;
@@ -23,8 +23,7 @@ public class PicoSpatialAudio : ModuleRules
 				Path.Combine(ModuleDirectory, "include"),
 			}
 		);
-
-
+		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -32,7 +31,9 @@ public class PicoSpatialAudio : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"AudioMixer",
+				"SignalProcessing",
 				"SoundFieldRendering",
+				"ProceduralMeshComponent",
 			}
 		);
 
@@ -52,9 +53,15 @@ public class PicoSpatialAudio : ModuleRules
 				"InputCore",
 				"Projects",
 				"AudioMixer",
-				"AudioExtensions"
+				"AudioExtensions",
+				"ProceduralMeshComponent",
 			}
 		);
+
+		if (Target.bBuildEditor == true)
+		{
+			PrivateDependencyModuleNames.Add("UnrealEd");
+		}
 
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
@@ -62,6 +69,8 @@ public class PicoSpatialAudio : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 		);
+		
+		PrivateDependencyModuleNames.Add("ProceduralMeshComponent");
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{
@@ -75,7 +84,7 @@ public class PicoSpatialAudio : ModuleRules
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Mac)
 		{
-			var dllPath = Path.Combine(ModuleDirectory, "libs/mac/x86_64", "libPicoSpatializerNative.dylib");
+			var dllPath = Path.Combine(ModuleDirectory, "libs/mac", "libPicoSpatializerNative.dylib");
 			PublicAdditionalLibraries.Add(dllPath);
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Android)

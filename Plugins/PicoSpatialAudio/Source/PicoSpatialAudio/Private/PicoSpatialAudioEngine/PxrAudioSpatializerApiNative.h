@@ -1,7 +1,11 @@
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
+
 #pragma once
 #include "PxrAudioSpatializerApi.h"
 #include "pxr_audio_spatializer.h"
 #include "pxr_audio_spatializer_types.h"
+#include "PxrAudioSpatializerCommonUtils.h"
+#include <shared_mutex>
 
 namespace Pxr_Audio
 {
@@ -11,136 +15,150 @@ namespace Pxr_Audio
 		class APINative final : public API
 		{
 		public:
-			APINative() = default;
+			APINative() : Context(nullptr)
+			{
+			}
+
 			virtual ~APINative() override = default;
 
 			virtual const char* GetVersion(int* Major, int* Minor, int* Patch) override;
-			virtual PxrAudioSpatializer_Result CreateContext(PxrAudioSpatializer_Context** Ctx,
-			                                                 PxrAudioSpatializer_RenderingMode Mode,
+			virtual PxrAudioSpatializer_Result CreateContext(PxrAudioSpatializer_RenderingMode Mode,
 			                                                 size_t FramesPerBuffer,
 			                                                 size_t SampleRate) override;
-			virtual PxrAudioSpatializer_Result InitializeContext(PxrAudioSpatializer_Context* Ctx) override;
-			virtual PxrAudioSpatializer_Result SubmitMesh(PxrAudioSpatializer_Context* Ctx,
-			                                              const float* Vertices,
-			                                              int VerticesCount,
-			                                              const int* Indices,
-			                                              int IndicesCount,
-			                                              PxrAudioSpatializer_AcousticsMaterial
-			                                              Material,
-			                                              int* GeometryId) override;
-			virtual PxrAudioSpatializer_Result SubmitMeshAndMaterialFactor(
-				PxrAudioSpatializer_Context* Ctx,
+			virtual PxrAudioSpatializer_Result InitializeContext() override;
+			virtual PxrAudioSpatializer_Result SubmitMesh(
 				const float* Vertices,
 				int VerticesCount,
 				const int* Indices,
 				int IndicesCount,
-				const float* AbsorptionFactor,
-				float ScatteringFactor,
-				float TransmissionFactor,
+				PxrAudioSpatializer_AcousticsMaterial
+				Material,
 				int* GeometryId) override;
+			virtual PxrAudioSpatializer_Result SubmitMeshAndMaterialFactor(const float* Vertices,
+			                                                               int VerticesCount,
+			                                                               const int* Indices,
+			                                                               int IndicesCount,
+			                                                               const float* AbsorptionFactor,
+			                                                               float ScatteringFactor,
+			                                                               float TransmissionFactor,
+			                                                               int* GeometryId) override;
+			virtual PxrAudioSpatializer_Result SubmitMeshWithConfig(const float* Vertices, int VerticesCount,
+			                                                        const int* Indices, int IndicesCount,
+			                                                        const PxrAudioSpatializer_AcousticMeshConfig*
+			                                                        Config,
+			                                                        int* GeometryId) override;
+			virtual PxrAudioSpatializer_Result RemoveMesh(int GeometryId) override;
+			virtual PxrAudioSpatializer_Result SetMeshEnable(int GeometryId, bool Enable) override;
+			virtual PxrAudioSpatializer_Result SetMeshConfig(int GeometryId,
+			                                                 const PxrAudioSpatializer_AcousticMeshConfig* Config,
+			                                                 unsigned PropertyMask) override;
 			virtual PxrAudioSpatializer_Result GetAbsorptionFactor(
 				PxrAudioSpatializer_AcousticsMaterial Material, float* AbsorptionFactor) override;
 			virtual PxrAudioSpatializer_Result GetScatteringFactor(
 				PxrAudioSpatializer_AcousticsMaterial Material, float* ScatteringFactor) override;
 			virtual PxrAudioSpatializer_Result GetTransmissionFactor(
 				PxrAudioSpatializer_AcousticsMaterial Material, float* TransmissionFactor) override;
-			virtual PxrAudioSpatializer_Result CommitScene(PxrAudioSpatializer_Context* Ctx) override;
-			virtual PxrAudioSpatializer_Result AddSource(PxrAudioSpatializer_Context* Ctx,
-			                                             PxrAudioSpatializer_SourceMode SourceMode,
-			                                             const float* Position,
-			                                             int* SourceId,
-			                                             bool bIsAsync = false) override;
-			virtual PxrAudioSpatializer_Result AddSourceWithOrientation(
-				PxrAudioSpatializer_Context* Ctx,
-				PxrAudioSpatializer_SourceMode Mode,
+			virtual PxrAudioSpatializer_Result CommitScene() override;
+			virtual PxrAudioSpatializer_Result AddSource(
+				PxrAudioSpatializer_SourceMode SourceMode,
 				const float* Position,
-				const float* Front,
-				const float* Up,
-				float Radius,
 				int* SourceId,
 				bool bIsAsync = false) override;
-			virtual PxrAudioSpatializer_Result AddSourceWithConfig(PxrAudioSpatializer_Context* Ctx,
-			                                                       const PxrAudioSpatializer_SourceConfig* SourceConfig,
-			                                                       int* SourceId,
-			                                                       bool bIsAsync = false) override;
-			virtual PxrAudioSpatializer_Result SetSourceAttenuationMode(
-				PxrAudioSpatializer_Context* Ctx,
-				int SourceId,
-				PxrAudioSpatializer_SourceAttenuationMode Mode,
-				DistanceAttenuationCallback DirectDistanceAttenuationCallback = nullptr,
-				DistanceAttenuationCallback IndirectDistanceAttenuationCallback = nullptr) override;
+			virtual PxrAudioSpatializer_Result AddSourceWithOrientation(PxrAudioSpatializer_SourceMode Mode,
+			                                                            const float* Position,
+			                                                            const float* Front,
+			                                                            const float* Up,
+			                                                            float Radius,
+			                                                            int* SourceId,
+			                                                            bool bIsAsync = false) override;
+			virtual PxrAudioSpatializer_Result AddSourceWithConfig(
+				const PxrAudioSpatializer_SourceConfig* SourceConfig,
+				int* SourceId,
+				bool bIsAsync = false) override;
+			virtual PxrAudioSpatializer_Result SetSourceConfig(const int SourceId,
+			                                                   const PxrAudioSpatializer_SourceConfig* SourceConfig,
+			                                                   unsigned int PropertyMask =
+				                                                   PASP_SourceProperty_All) override;
+			virtual PxrAudioSpatializer_Result GetSourceConfig(const int SourceId,
+			                                                   PxrAudioSpatializer_SourceConfig* SourceConfig) override;
+			virtual PxrAudioSpatializer_Result SetSourceAttenuationMode(int SourceId,
+			                                                            PxrAudioSpatializer_SourceAttenuationMode Mode,
+			                                                            DistanceAttenuationCallback
+			                                                            DirectDistanceAttenuationCallback = nullptr,
+			                                                            DistanceAttenuationCallback
+			                                                            IndirectDistanceAttenuationCallback =
+				                                                            nullptr) override;
 			virtual PxrAudioSpatializer_Result SetSourceRange(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, float RangeMin, float RangeMax) override;
+				int SourceId, float RangeMin, float RangeMax) override;
 			virtual PxrAudioSpatializer_Result RemoveSource(
-				PxrAudioSpatializer_Context* Ctx, int SourceId) override;
-			virtual PxrAudioSpatializer_Result SubmitSourceBuffer(PxrAudioSpatializer_Context* Ctx,
-			                                                      int SourceId,
-			                                                      const float* InputBufferPtr,
-			                                                      size_t NumFrames) override;
+				int SourceId) override;
+			virtual PxrAudioSpatializer_Result SubmitSourceBuffer(
+				int SourceId,
+				const float* InputBufferPtr,
+				size_t NumFrames) override;
 			virtual PxrAudioSpatializer_Result
-			SubmitAmbisonicChannelBuffer(PxrAudioSpatializer_Context* Ctx,
-			                             const float* AmbisonicChannelBuffer,
-			                             int Order,
-			                             int Degree,
-			                             PxrAudioSpatializer_AmbisonicNormalizationType NormType,
-			                             float Gain) override;
+			SubmitAmbisonicChannelBuffer(
+				const float* AmbisonicChannelBuffer,
+				int Order,
+				int Degree,
+				PxrAudioSpatializer_AmbisonicNormalizationType NormType,
+				float Gain,
+				int ParentAmbisonicOrder) override;
 			virtual PxrAudioSpatializer_Result SubmitInterleavedAmbisonicBuffer(
-				PxrAudioSpatializer_Context* Ctx,
 				const float* AmbisonicBuffer,
 				int AmbisonicOrder,
 				PxrAudioSpatializer_AmbisonicNormalizationType NormType,
 				float Gain) override;
-			virtual PxrAudioSpatializer_Result SubmitMatrixInputBuffer(PxrAudioSpatializer_Context* Ctx,
-			                                                           const float* InputBuffer,
-			                                                           int InputChannelIndex) override;
+			virtual PxrAudioSpatializer_Result SubmitMatrixInputBuffer(
+				const float* InputBuffer,
+				int InputChannelIndex) override;
 			virtual PxrAudioSpatializer_Result GetInterleavedBinauralBuffer(
-				PxrAudioSpatializer_Context* Ctx,
 				float* OutputBufferPtr,
 				size_t NumFrames,
 				bool bIsAccumulative = false) override;
-			virtual PxrAudioSpatializer_Result GetPlanarBinauralBuffer(PxrAudioSpatializer_Context* Ctx,
-			                                                           float* const * OutputBufferPtr,
-			                                                           size_t NumFrames,
-			                                                           bool bIsAccumulative = false) override;
-			virtual PxrAudioSpatializer_Result GetInterleavedLoudspeakersBuffer(
-				PxrAudioSpatializer_Context* Ctx,
-				float* OutputBufferPtr,
-				size_t NumFrames) override;
-			virtual PxrAudioSpatializer_Result GetPlanarLoudspeakersBuffer(
-				PxrAudioSpatializer_Context* Ctx,
+			virtual PxrAudioSpatializer_Result GetPlanarBinauralBuffer(
 				float* const * OutputBufferPtr,
+				size_t NumFrames,
+				bool bIsAccumulative = false) override;
+			virtual PxrAudioSpatializer_Result GetInterleavedLoudspeakersBuffer(float* OutputBufferPtr,
 				size_t NumFrames) override;
-			virtual PxrAudioSpatializer_Result UpdateScene(PxrAudioSpatializer_Context* Ctx) override;
+			virtual PxrAudioSpatializer_Result GetPlanarLoudspeakersBuffer(float* const * OutputBufferPtr,
+			                                                               size_t NumFrames) override;
+			virtual PxrAudioSpatializer_Result UpdateScene() override;
 			virtual PxrAudioSpatializer_Result SetDopplerEffect(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, int On) override;
+				int SourceId, int On) override;
 			virtual PxrAudioSpatializer_Result SetPlaybackMode(
-				PxrAudioSpatializer_Context* Ctx, PxrAudioSpatializer_PlaybackMode PlaybackMode) override;
+				PxrAudioSpatializer_PlaybackMode PlaybackMode) override;
 			virtual PxrAudioSpatializer_Result SetLoudspeakerArray(
-				PxrAudioSpatializer_Context* Ctx, const float* Positions, int NumLoudspeakers) override;
-			virtual PxrAudioSpatializer_Result SetMappingMatrix(PxrAudioSpatializer_Context* Ctx,
-			                                                    const float* Matrix,
-			                                                    int NumInputChannels,
-			                                                    int NumOutputChannels) override;
+				const float* Positions, int NumLoudspeakers) override;
+			virtual PxrAudioSpatializer_Result SetMappingMatrix(
+				const float* Matrix,
+				int NumInputChannels,
+				int NumOutputChannels) override;
 			virtual PxrAudioSpatializer_Result SetAmbisonicOrientation(
-				PxrAudioSpatializer_Context* Ctx, const float* Front, const float* Up) override;
+				const float* Front, const float* Up) override;
 			virtual PxrAudioSpatializer_Result SetListenerPosition(
-				PxrAudioSpatializer_Context* Ctx, const float* Position) override;
+				const float* Position) override;
 			virtual PxrAudioSpatializer_Result SetListenerOrientation(
-				PxrAudioSpatializer_Context* Ctx, const float* Front, const float* Up) override;
-			virtual PxrAudioSpatializer_Result SetListenerPose(PxrAudioSpatializer_Context* Ctx,
-			                                                   const float* Position,
-			                                                   const float* Front,
-			                                                   const float* Up) override;
+				const float* Front, const float* Up) override;
+			virtual PxrAudioSpatializer_Result SetListenerPose(
+				const float* Position,
+				const float* Front,
+				const float* Up) override;
 			virtual PxrAudioSpatializer_Result SetSourcePosition(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, const float* Position) override;
+				int SourceId, const float* Position) override;
 			virtual PxrAudioSpatializer_Result SetSourceGain(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, float Gain) override;
+				int SourceId, float Gain) override;
 			virtual PxrAudioSpatializer_Result SetSourceSize(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, float VolumetricSize) override;
-			virtual PxrAudioSpatializer_Result UpdateSourceMode(PxrAudioSpatializer_Context* Ctx,
-			                                                    int SourceId,
-			                                                    PxrAudioSpatializer_SourceMode Mode) override;
-			virtual PxrAudioSpatializer_Result Destroy(PxrAudioSpatializer_Context* Ctx) override;
+				int SourceId, float VolumetricSize) override;
+			virtual PxrAudioSpatializer_Result UpdateSourceMode(
+				int SourceId,
+				PxrAudioSpatializer_SourceMode Mode) override;
+			virtual PxrAudioSpatializer_Result Destroy() override;
+
+		private:
+			PxrAudioSpatializer_Context* Context;
+			std::shared_timed_mutex ContextDestructionMutex;
 		};
 	}
 }

@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "pxr_audio_spatializer_types.h"
+#include "pxr_audio_spatializer_channel_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -164,6 +165,95 @@ PxrAudioSpatializer_SubmitMeshAndMaterialFactor(PxrAudioSpatializer_Context* ctx
                                                 float scattering_factor,
                                                 float transmission_factor,
                                                 int* geometry_id);
+
+/**
+ * 提交mesh到场景中。与 PxrAudioSpatializer_SubmitMesh 功能相同，不过这个API可以直接输入mesh的配置属性数据结构
+ *
+ * @param ctx 要使用的的 context
+ * @param vertices 场景的顶点数组
+ * @param vertices_count 场景中顶点的个数
+ * @param indices 场景中三角形的顶点索引数组
+ * @param indices_count 顶点索引数组（三角形）的个数
+ * @param config Mesh 的属性
+ * @param geometry_id 返回提交的 Mesh 的 geometry_id，每个 Mesh 在场景中会有唯一对应的 geometry_id
+ * @return 返回执行结果
+ *
+ * Submits acoustic mesh to the scene. This API has the same functionality as PxrAudioSpatializer_SubmitMesh, but can
+ * directly input property of mesh.
+ *
+ * @param ctx context
+ * @param vertices Vertices array of the scene
+ * @param vertices_count Number of vertices in the vertices array
+ * @param indices Indices array of the scene
+ * @param indices_count Number of triangles represented by the indices array
+ * @param config Config of the mesh
+ * @param[out] geometry_id Returns the geometry id of the submitted scene mesh, this is unique in current current
+ * @return Error code of this API call. Returns YGG_SUCCESS if nothing was wrong.
+ */
+PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
+PxrAudioSpatializer_SubmitMeshWithConfig(PxrAudioSpatializer_Context* ctx,
+                                         const float* vertices,
+                                         int vertices_count,
+                                         const int* indices,
+                                         int indices_count,
+                                         const PxrAudioSpatializer_AcousticMeshConfig* config,
+                                         int* geometry_id);
+
+/**
+ * 从场景中删除指定的场景mesh
+ * @param ctx 要使用的的 context
+ * @param geometry_id 要删除的 Mesh 的 geometry_id，每个 Mesh 在场景中会有唯一对应的 geometry_id
+ * @return 返回执行结果
+ *
+ * Remove specified scene mesh from scene
+ * @param ctx context
+ * @param geometry_id ID of the mesh you want to remove from scene
+ * @return Error code of this API call. Returns PASP_SUCCESS if nothing was wrong.
+ */
+PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result PxrAudioSpatializer_RemoveMesh(PxrAudioSpatializer_Context* ctx,
+                                                                                       int geometry_id);
+
+/**
+ * 从场景中 enable / disable 指定的场景mesh
+ * @param ctx 要使用的的 context
+ * @param geometry_id 要删除的 Mesh 的 geometry_id，每个 Mesh 在场景中会有唯一对应的 geometry_id
+ * @param enable enable / disable 指定的场景mesh
+ * @return 返回执行结果
+ *
+ * Enable / disable specified scene mesh from scene
+ * @param ctx context
+ * @param geometry_id ID of the mesh you want to remove from scene
+ * @param enable enable / disable specified scene mesh
+ * @return Error code of this API call. Returns PASP_SUCCESS if nothing was wrong.
+ */
+PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
+PxrAudioSpatializer_SetMeshEnable(PxrAudioSpatializer_Context* ctx, int geometry_id, bool enable);
+
+/**
+ * 设定指定场景mesh的位置、朝向，和缩放。如果想让被提交的mesh有初始的位置、朝向，以及缩放的话，请务必在提交mesh后立刻调用这个接口。
+ * @param ctx 要使用的的 context
+ * @param geometry_id 要修改的 Mesh 的 geometry_id，每个 Mesh 在场景中会有唯一对应的 geometry_id
+ * @param config Mesh 的配置属性
+ * @param property_mask 一个表示什么Mesh属性需要被修改的bit mask。只有和property_mask 按位与之后不为0的
+ * PxrAudioSpatializer_AcousticMeshConfig 才会被修改
+ * @return 返回执行结果
+ *
+ * Setup the position, rotation, and scaling of the specified mesh via a 4x4 transform matrix. If you want to
+ * specify the initial transform of a submitted mesh, please call this API as soon as you finished your mesh submission
+ * call.
+ * @param ctx context
+ * @param geometry_id ID of the mesh you want to config
+ * @param config Config of the mesh
+ * @param property_mask A bit mask that specify which properties of the mesh need to be changed. Only the
+ * PxrAudioSpatializer_AcousticMeshConfig that yield non-zero value by bit-wise and operation with property_mask will be
+ * changed.
+ * @return Error code of this API call. Returns YGG_SUCCESS if nothing was wrong.
+ */
+PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
+PxrAudioSpatializer_SetMeshConfig(PxrAudioSpatializer_Context* ctx,
+                                  int geometry_id,
+                                  const PxrAudioSpatializer_AcousticMeshConfig* config,
+                                  unsigned int property_mask = PASP_MeshProperty_All);
 
 /**
  * 根据输入的材质预设，输出材质的吸收参数
@@ -377,6 +467,47 @@ PxrAudioSpatializer_AddSourceWithConfig(PxrAudioSpatializer_Context* ctx,
                                         bool is_async = false);
 
 /**
+ * 通过 PxrAudioSpatializer_SetSourceConfig 设置声源属性。
+ *
+ * @param ctx 要使用的的 context
+ * @param source_id 需要配置 config 的 source id
+ * @param source_config 要使用的声源 config
+ * @return 返回执行结果
+ *
+ * Set sound source config by PxrAudioSpatializer_SetSourceConfig
+ *
+ * @param ctx Context pointer
+ * @param source_id ID of sound source
+ * @param source_config config of sound source
+ * @return Error code of API call
+ */
+PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
+PxrAudioSpatializer_SetSourceConfig(PxrAudioSpatializer_Context* ctx,
+                                    const int source_id,
+                                    const PxrAudioSpatializer_SourceConfig* source_config,
+                                    unsigned int property_mask = PASP_SourceProperty_All);
+/**
+ * 获得声源的 source config 配置
+ *
+ * @param ctx 要使用的的 context
+ * @param source_id 需要获取 config 的source id
+ * @param source_config 写入 config 的地址
+ * @return 返回执行结果
+ *
+ * Get sound source config
+ *
+ * @param ctx Context pointer
+ * @param source_id ID of sound source
+ * @param source_config address to write source config
+ * @return Error code of API call
+ *
+ */
+PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
+PxrAudioSpatializer_GetSourceConfig(PxrAudioSpatializer_Context* ctx,
+                                    const int source_id,
+                                    PxrAudioSpatializer_SourceConfig* source_config);
+
+/**
  * 设置声源的距离衰减模型，默认为 InverseSquare，即按照物理计算距离带来的音量衰减。
  * 如果希望外界（游戏引擎、中间件）控制距离衰减，则可讲衰减模型设置为 None 或者 Fixed（在目前的实现中这两者完全相同）。
  *
@@ -495,6 +626,7 @@ PxrAudioSpatializer_SubmitSourceBuffer(PxrAudioSpatializer_Context* ctx,
  * @param degree 该声道对应的 HOA 的 degree
  * @param norm_type 该声道使用的正规化方法，一般有 SN3D 与 N3D 两种
  * @param gain 该声道加入混音的 gain。一般来说为了保证 HOA 渲染结果的准确性，HOA 的所有声道的 gain 应该相同
+ * @param (可选) parent_ambisonic_order 该声道所隶属于的Ambisonics信号的阶数
  * @return 返回执行结果
  *
  * Submit a channel of HOA input signal, with input order and degree indices to specify ambisonic channel. The HOA input
@@ -506,7 +638,8 @@ PxrAudioSpatializer_SubmitSourceBuffer(PxrAudioSpatializer_Context* ctx,
  * @param degree The degree index of this HOA channel
  * @param norm_type The normalization method used for this HOA channel, for example SN3D or N3D
  * @param gain The gain/attenuation added to this HOA channel. Normally all channels of an HOA should have the same
- * gain.
+ * gain.*
+ * @param (optional) parent_ambisonic_order The ambisonic order of the ambisonic data that owns the submitted channel
  * @return Error code of this API call. Returns PASP_SUCCESS if nothing was wrong.
  */
 PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
@@ -515,7 +648,8 @@ PxrAudioSpatializer_SubmitAmbisonicChannelBuffer(PxrAudioSpatializer_Context* ct
                                                  int order,
                                                  int degree,
                                                  PxrAudioSpatializer_AmbisonicNormalizationType norm_type,
-                                                 float gain);
+                                                 float gain,
+                                                 int parent_ambisonic_order = -1);
 
 /**
  * 提交当前的 HOA 音频 PCM buffer。每次调用将当前处理 block 的 HOA 的所有声道一起提交。这里的 HOA 内容会与 object
@@ -564,6 +698,39 @@ PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
 PxrAudioSpatializer_SubmitMatrixInputBuffer(PxrAudioSpatializer_Context* ctx,
                                             const float* input_buffer,
                                             int input_channel_index);
+
+/**
+ * 提交 自定义类型的输入音频 planner buffer。
+ *
+ * @param ctx 要使用的的 context
+ * @param input_buffer 当前输入 planner buffer
+ * @param num_frames 当前输入buffer 的帧长
+ * @param channel_config 输入 buffer 对应的通道大类，有若干 Ambisonic 以及传统多通道类型可供选择
+ * @param channel_mask 输入 buffer 对应的通道掩码，只有掩码中的非零位对应的通道会被提交到引擎
+ * @param discard_lfe 在提交传统多通道 buffer 时，是否丢弃 lfe 通道的信号，默认为
+ * true。当你的输出是双耳音频时，建议选择true
+ * @return 返回执行结果
+ *
+ * Submit a matrix type input audio channel.
+ *
+ * @param ctx Context pointer
+ * @param input_buffer Input audio channel
+ * @param num_frames Number of frames to be submitted
+ * @param channel_config The channel config type of input buffer. You can choose from several Ambisonic and
+ * multi-channel configurations
+ * @param channel_mask The channel enabling mask of input buffer. Only the input channels that have a non-zero mask bit
+ * would be submitted to our engine
+ * @param discard_lfe Determine if we would discard lfe channel signal when inputting multi-channel buffer (default to
+ * true). When outputting to binaural, we highly recommend that you set it to true.
+ * @return Error code of this API call. Returns PASP_SUCCESS if nothing was wrong.
+ */
+PXR_AUDIO_SPATIALIZER_EXPORT PxrAudioSpatializer_Result
+PxrAudioSpatializer_SubmitPlanarPresetInputBuffer(PxrAudioSpatializer_Context* ctx,
+                                                  const float* const* input_buffer,
+                                                  size_t num_frames,
+                                                  PxrAudioSpatializer_ChannelConfig channel_config,
+                                                  PxrAudioSpatializer_ChannelMask channel_mask,
+                                                  bool discard_lfe = true);
 
 /**
  * 获取空间化处理后的音频数据到交织格式排列的输出。

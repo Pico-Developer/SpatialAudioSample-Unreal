@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
 
 #include "PicoSpatialAudioModule.h"
 
@@ -170,12 +170,12 @@ void* FPicoSpatialAudioModule::LoadDll()
 		Path = ModuleDir / TEXT("Source/PicoSpatialAudio/libs/windows/dll/PicoSpatializerNative.dll");
 #endif	// PLATFORM_64BITS
 #elif PLATFORM_MAC
-	Path = ModuleDir / TEXT("Source/PicoSpatialAudio/libs/mac/x86_64/libPicoSpatializerNative.dylib");
+	Path = ModuleDir / TEXT("Source/PicoSpatialAudio/libs/mac/libPicoSpatializerNative.dylib");
 #elif PLATFORM_ANDROID
 		// Not necessary on this platform.
 		return nullptr;
 #else
-		UE_LOG(LogResonanceAudio, Error, TEXT("Unsupported Platform. Supported platforms are ANDROID, MAC and WINDOWS 64-bits"));
+		UE_LOG(LogPicoSpatialAudio, Error, TEXT("Unsupported Platform. Supported platforms are ANDROID, MAC and WINDOWS 64-bits"));
 		return nullptr;
 #endif  // PLATFORM_WINDOWS
 

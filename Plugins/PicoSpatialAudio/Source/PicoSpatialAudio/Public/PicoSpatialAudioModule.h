@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
@@ -7,6 +5,7 @@
 #include "PicoSpatializationSourceSettings.h"
 #include "pxr_audio_spatializer_types.h"
 #include "AudioDevice.h"
+#include "PicoAmbisonicsRenderer.h"
 #include "PxrAudioSpatializerCommonUtils.h"
 #include "Interfaces/IPluginManager.h"
 
@@ -67,8 +66,7 @@ private:
 	// Plugin factories.
 	FPicoSpatializationFactory SpatializationPluginFactory;
 	FPicoReverbFactory ReverbPluginFactory;
-	//	TODO(xuzhouye) Implement occlusion plugin
-	// FPicoOcclusionFactory OcclusionFactory;
+	Pxr_Audio::Spatializer::FAmbisonicsFactory AmbisonicsFactory;
 
 	//	Dll loading tools
 	void* DllHandle = nullptr;

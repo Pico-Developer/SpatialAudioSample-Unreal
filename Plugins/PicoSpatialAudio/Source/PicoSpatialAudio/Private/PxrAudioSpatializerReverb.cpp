@@ -1,3 +1,5 @@
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
+
 #include "PxrAudioSpatializerReverb.h"
 
 namespace Pxr_Audio
@@ -61,6 +63,9 @@ namespace Pxr_Audio
 				ReverbSubmix = NewObject<USoundSubmix>(USoundSubmix::StaticClass(), *DefaultSubmixName);
 				ReverbSubmix->bMuteWhenBackgrounded = true;
 			}
+#if ENGINE_MAJOR_VERSION >= 5
+			ReverbSubmix->bAutoDisable = false;
+#endif
 
 			if (!SubmixEffect.IsValid())
 			{

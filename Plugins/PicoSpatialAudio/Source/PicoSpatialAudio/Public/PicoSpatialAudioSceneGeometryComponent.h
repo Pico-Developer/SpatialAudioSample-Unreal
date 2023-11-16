@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
 
 #pragma once
 #include "CoreMinimal.h"
@@ -24,6 +24,8 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
 	                           FActorComponentTickFunction* ThisTickFunction) override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	int32 SubmitToContext();
 	int32 SubmitBakedMeshToContext();
 
@@ -45,6 +47,9 @@ private:
 	int InternalGeomId;
 	int InternalBakedGeomId;
 	bool bSubmitted;
+	FTransform PreviousTransformUnreal;
+	PxrAudioSpatializer_AcousticMeshConfig MeshConfig;
+	unsigned int PropertyMask;
 
 	UPROPERTY() //	Add UPROPERTY() to prevent GatheredStaticMeshes being garbage collected at unknown time
 	TArray<UStaticMesh*> GatheredStaticMeshes;
@@ -73,6 +78,7 @@ private:
 	                                                   bool InAllowCPUAccess);
 	static void BatchStaticMeshes(const TArray<UStaticMesh*>& InGatheredStaticMeshes,
 	                              const TArray<FTransform>& InGatheredStaticMeshTransforms,
+	                              const FTransform& RootTransform,
 	                              TArray<float>& OutBatchedMeshVerticesBuffer,
 	                              TArray<int32>& OutBatchedMeshIndicesBuffer);
 };

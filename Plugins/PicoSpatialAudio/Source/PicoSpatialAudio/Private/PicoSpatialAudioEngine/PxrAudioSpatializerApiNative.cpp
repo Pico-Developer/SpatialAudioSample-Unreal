@@ -1,3 +1,5 @@
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
+
 #include "PxrAudioSpatializerApiNative.h"
 
 namespace Pxr_Audio
@@ -9,34 +11,40 @@ namespace Pxr_Audio
 			return PxrAudioSpatializer_GetVersion(Major, Minor, Patch);
 		}
 
-		PxrAudioSpatializer_Result APINative::CreateContext(PxrAudioSpatializer_Context** Ctx,
-		                                                    PxrAudioSpatializer_RenderingMode Mode,
-		                                                    size_t FramesPerBuffer,
-		                                                    size_t SampleRate)
+		PxrAudioSpatializer_Result APINative::CreateContext(
+			PxrAudioSpatializer_RenderingMode Mode,
+			size_t FramesPerBuffer,
+			size_t SampleRate)
 		{
-			return PxrAudioSpatializer_CreateContext(Ctx, Mode, FramesPerBuffer, SampleRate);
+			return PxrAudioSpatializer_CreateContext(&Context, Mode, FramesPerBuffer, SampleRate);
 		}
 
-		PxrAudioSpatializer_Result APINative::InitializeContext(PxrAudioSpatializer_Context* Ctx)
+		PxrAudioSpatializer_Result APINative::InitializeContext()
 		{
-			return PxrAudioSpatializer_InitializeContext(Ctx);
+			return PxrAudioSpatializer_InitializeContext(Context);
 		}
 
-		PxrAudioSpatializer_Result APINative::SubmitMesh(PxrAudioSpatializer_Context* Ctx,
-		                                                 const float* Vertices,
-		                                                 int VerticesCount,
-		                                                 const int* Indices,
-		                                                 int IndicesCount,
-		                                                 PxrAudioSpatializer_AcousticsMaterial
-		                                                 Material,
-		                                                 int* GeometryId)
+		PxrAudioSpatializer_Result APINative::SubmitMesh(
+			const float* Vertices,
+			int VerticesCount,
+			const int* Indices,
+			int IndicesCount,
+			PxrAudioSpatializer_AcousticsMaterial
+			Material,
+			int* GeometryId)
 		{
-			return PxrAudioSpatializer_SubmitMesh(Ctx, Vertices, VerticesCount, Indices, IndicesCount, Material,
-			                                      GeometryId);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SubmitMesh(Context, Vertices, VerticesCount, Indices, IndicesCount,
+				                                        Material,
+				                                        GeometryId);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
 		PxrAudioSpatializer_Result APINative::SubmitMeshAndMaterialFactor(
-			PxrAudioSpatializer_Context* Ctx,
 			const float* Vertices,
 			int VerticesCount,
 			const int* Indices,
@@ -46,10 +54,67 @@ namespace Pxr_Audio
 			float TransmissionFactor,
 			int* GeometryId)
 		{
-			return PxrAudioSpatializer_SubmitMeshAndMaterialFactor(Ctx, Vertices, VerticesCount, Indices, IndicesCount,
-			                                                       AbsorptionFactor, ScatteringFactor,
-			                                                       TransmissionFactor,
-			                                                       GeometryId);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SubmitMeshAndMaterialFactor(
+					Context, Vertices, VerticesCount, Indices, IndicesCount,
+					AbsorptionFactor, ScatteringFactor,
+					TransmissionFactor,
+					GeometryId);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::SubmitMeshWithConfig(const float* Vertices, int VerticesCount,
+		                                                           const int* Indices, int IndicesCount,
+		                                                           const PxrAudioSpatializer_AcousticMeshConfig* Config,
+		                                                           int* GeometryId)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SubmitMeshWithConfig(Context, Vertices, VerticesCount, Indices,
+				                                                  IndicesCount, Config, GeometryId);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::RemoveMesh(int GeometryId)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_RemoveMesh(Context, GeometryId);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::SetMeshEnable(int GeometryId, bool Enable)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetMeshEnable(Context, GeometryId, Enable);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::SetMeshConfig(int GeometryId,
+		                                                    const PxrAudioSpatializer_AcousticMeshConfig* Config,
+		                                                    unsigned PropertyMask)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetMeshConfig(Context, GeometryId, Config, PropertyMask);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
 		PxrAudioSpatializer_Result APINative::GetAbsorptionFactor(
@@ -70,215 +135,419 @@ namespace Pxr_Audio
 			return PxrAudioSpatializer_GetTransmissionFactor(Material, TransmissionFactor);
 		}
 
-		PxrAudioSpatializer_Result APINative::CommitScene(PxrAudioSpatializer_Context* Ctx)
+		PxrAudioSpatializer_Result APINative::CommitScene()
 		{
-			return PxrAudioSpatializer_CommitScene(Ctx);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_CommitScene(Context);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::AddSource(PxrAudioSpatializer_Context* Ctx,
-		                                                PxrAudioSpatializer_SourceMode SourceMode,
-		                                                const float* Position,
-		                                                int* SourceId,
-		                                                bool bIsAsync)
-		{
-			return PxrAudioSpatializer_AddSource(Ctx, SourceMode, Position, SourceId, bIsAsync);
-		}
-
-		PxrAudioSpatializer_Result APINative::AddSourceWithOrientation(
-			PxrAudioSpatializer_Context* Ctx,
-			PxrAudioSpatializer_SourceMode Mode,
+		PxrAudioSpatializer_Result APINative::AddSource(
+			PxrAudioSpatializer_SourceMode SourceMode,
 			const float* Position,
-			const float* Front,
-			const float* Up,
-			float Radius,
 			int* SourceId,
 			bool bIsAsync)
 		{
-			return PxrAudioSpatializer_AddSourceWithOrientation(Ctx, Mode, Position, Front, Up, Radius, SourceId,
-			                                                    bIsAsync);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_AddSource(Context, SourceMode, Position, SourceId, bIsAsync);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::AddSourceWithConfig(PxrAudioSpatializer_Context* Ctx,
-		                                                          const PxrAudioSpatializer_SourceConfig* SourceConfig,
-		                                                          int* SourceId,
-		                                                          bool bIsAsync)
+		PxrAudioSpatializer_Result APINative::AddSourceWithOrientation(PxrAudioSpatializer_SourceMode Mode,
+		                                                               const float* Position,
+		                                                               const float* Front,
+		                                                               const float* Up,
+		                                                               float Radius,
+		                                                               int* SourceId,
+		                                                               bool bIsAsync)
 		{
-			return PxrAudioSpatializer_AddSourceWithConfig(Ctx, SourceConfig, SourceId, bIsAsync);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_AddSourceWithOrientation(Context, Mode, Position, Front, Up, Radius,
+				                                                      SourceId,
+				                                                      bIsAsync);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetSourceAttenuationMode(
-			PxrAudioSpatializer_Context* Ctx,
-			int SourceId,
-			PxrAudioSpatializer_SourceAttenuationMode Mode,
-			DistanceAttenuationCallback DirectDistanceAttenuationCallback,
-			DistanceAttenuationCallback IndirectDistanceAttenuationCallback)
+		PxrAudioSpatializer_Result APINative::AddSourceWithConfig(
+			const PxrAudioSpatializer_SourceConfig* SourceConfig,
+			int* SourceId,
+			bool bIsAsync)
 		{
-			return PxrAudioSpatializer_SetSourceAttenuationMode(Ctx, SourceId, Mode, DirectDistanceAttenuationCallback,
-			                                                    IndirectDistanceAttenuationCallback);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_AddSourceWithConfig(Context, SourceConfig, SourceId, bIsAsync);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::SetSourceConfig(const int SourceId,
+		                                                      const PxrAudioSpatializer_SourceConfig* SourceConfig,
+		                                                      unsigned int PropertyMask)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetSourceConfig(Context, SourceId, SourceConfig, PropertyMask);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::GetSourceConfig(const int SourceId,
+		                                                      PxrAudioSpatializer_SourceConfig* SourceConfig)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_GetSourceConfig(Context, SourceId, SourceConfig);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::SetSourceAttenuationMode(int SourceId,
+		                                                               PxrAudioSpatializer_SourceAttenuationMode Mode,
+		                                                               DistanceAttenuationCallback
+		                                                               DirectDistanceAttenuationCallback,
+		                                                               DistanceAttenuationCallback
+		                                                               IndirectDistanceAttenuationCallback)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetSourceAttenuationMode(Context, SourceId, Mode,
+				                                                      DirectDistanceAttenuationCallback,
+				                                                      IndirectDistanceAttenuationCallback);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
 		PxrAudioSpatializer_Result APINative::SetSourceRange(
-			PxrAudioSpatializer_Context* Ctx, int SourceId, float RangeMin, float RangeMax)
+			int SourceId, float RangeMin, float RangeMax)
 		{
-			return PxrAudioSpatializer_SetSourceRange(Ctx, SourceId, RangeMin, RangeMax);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetSourceRange(Context, SourceId, RangeMin, RangeMax);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
 		PxrAudioSpatializer_Result APINative::RemoveSource(
-			PxrAudioSpatializer_Context* Ctx, int SourceId)
+			int SourceId)
 		{
-			return PxrAudioSpatializer_RemoveSource(Ctx, SourceId);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_RemoveSource(Context, SourceId);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SubmitSourceBuffer(PxrAudioSpatializer_Context* Ctx,
-		                                                         int SourceId,
-		                                                         const float* InputBufferPtr,
-		                                                         size_t NumFrames)
+		PxrAudioSpatializer_Result APINative::SubmitSourceBuffer(
+			int SourceId,
+			const float* InputBufferPtr,
+			size_t NumFrames)
 		{
-			return PxrAudioSpatializer_SubmitSourceBuffer(Ctx, SourceId, InputBufferPtr, NumFrames);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SubmitSourceBuffer(Context, SourceId, InputBufferPtr, NumFrames);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
 		PxrAudioSpatializer_Result
-		APINative::SubmitAmbisonicChannelBuffer(PxrAudioSpatializer_Context* Ctx,
-		                                        const float* AmbisonicChannelBuffer,
-		                                        int Order,
-		                                        int Degree,
-		                                        PxrAudioSpatializer_AmbisonicNormalizationType NormType,
-		                                        float Gain)
-		{
-			return PxrAudioSpatializer_SubmitAmbisonicChannelBuffer(Ctx, AmbisonicChannelBuffer, Order, Degree,
-			                                                        NormType,
-			                                                        Gain);
-		}
-
-		PxrAudioSpatializer_Result APINative::SubmitInterleavedAmbisonicBuffer(
-			PxrAudioSpatializer_Context* Ctx,
-			const float* AmbisonicBuffer,
-			int AmbisonicOrder,
+		APINative::SubmitAmbisonicChannelBuffer(
+			const float* AmbisonicChannelBuffer,
+			int Order,
+			int Degree,
 			PxrAudioSpatializer_AmbisonicNormalizationType NormType,
-			float Gain)
+			float Gain,
+			int ParentAmbisonicOrder)
 		{
-			return PxrAudioSpatializer_SubmitInterleavedAmbisonicBuffer(Ctx, AmbisonicBuffer, AmbisonicOrder, NormType,
-			                                                            Gain);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SubmitAmbisonicChannelBuffer(
+					Context, AmbisonicChannelBuffer, Order, Degree,
+					NormType,
+					Gain,
+					ParentAmbisonicOrder);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SubmitMatrixInputBuffer(PxrAudioSpatializer_Context* Ctx,
-		                                                              const float* InputBuffer,
-		                                                              int InputChannelIndex)
+		PxrAudioSpatializer_Result APINative::SubmitInterleavedAmbisonicBuffer(const float* AmbisonicBuffer,
+		                                                                       int AmbisonicOrder,
+		                                                                       PxrAudioSpatializer_AmbisonicNormalizationType
+		                                                                       NormType,
+		                                                                       float Gain)
 		{
-			return PxrAudioSpatializer_SubmitMatrixInputBuffer(Ctx, InputBuffer, InputChannelIndex);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SubmitInterleavedAmbisonicBuffer(
+					Context, AmbisonicBuffer, AmbisonicOrder, NormType,
+					Gain);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::GetInterleavedBinauralBuffer(
-			PxrAudioSpatializer_Context* Ctx,
-			float* OutputBufferPtr,
+		PxrAudioSpatializer_Result APINative::SubmitMatrixInputBuffer(
+			const float* InputBuffer,
+			int InputChannelIndex)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SubmitMatrixInputBuffer(Context, InputBuffer, InputChannelIndex);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::GetInterleavedBinauralBuffer(float* OutputBufferPtr,
+		                                                                   size_t NumFrames,
+		                                                                   bool bIsAccumulative)
+		{
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_GetInterleavedBinauralBuffer(
+					Context, OutputBufferPtr, NumFrames, bIsAccumulative);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
+		}
+
+		PxrAudioSpatializer_Result APINative::GetPlanarBinauralBuffer(
+			float* const * OutputBufferPtr,
 			size_t NumFrames,
 			bool bIsAccumulative)
 		{
-			return PxrAudioSpatializer_GetInterleavedBinauralBuffer(Ctx, OutputBufferPtr, NumFrames, bIsAccumulative);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_GetPlanarBinauralBuffer(Context, OutputBufferPtr, NumFrames,
+				                                                     bIsAccumulative);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::GetPlanarBinauralBuffer(PxrAudioSpatializer_Context* Ctx,
-		                                                              float* const * OutputBufferPtr,
-		                                                              size_t NumFrames,
-		                                                              bool bIsAccumulative)
+		PxrAudioSpatializer_Result APINative::GetInterleavedLoudspeakersBuffer(
+			float* OutputBufferPtr, size_t NumFrames)
 		{
-			return PxrAudioSpatializer_GetPlanarBinauralBuffer(Ctx, OutputBufferPtr, NumFrames, bIsAccumulative);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_GetInterleavedLoudspeakersBuffer(Context, OutputBufferPtr, NumFrames);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::GetInterleavedLoudspeakersBuffer(PxrAudioSpatializer_Context* Ctx,
-		                                                                       float* OutputBufferPtr, size_t NumFrames)
+		PxrAudioSpatializer_Result APINative::GetPlanarLoudspeakersBuffer(
+			float* const* OutputBufferPtr,
+			size_t NumFrames)
 		{
-			return PxrAudioSpatializer_GetInterleavedLoudspeakersBuffer(Ctx, OutputBufferPtr, NumFrames);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_GetPlanarLoudspeakersBuffer(Context, OutputBufferPtr, NumFrames);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::GetPlanarLoudspeakersBuffer(PxrAudioSpatializer_Context* Ctx,
-		                                                                  float* const* OutputBufferPtr,
-		                                                                  size_t NumFrames)
+		DECLARE_CYCLE_STAT(TEXT("APINative::UpdateScene"), STAT_APINative_UpdateScene, STATGROUP_PicoSpatialAudio)
+		PxrAudioSpatializer_Result APINative::UpdateScene()
 		{
-			return PxrAudioSpatializer_GetPlanarLoudspeakersBuffer(Ctx, OutputBufferPtr, NumFrames);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				{
+					SCOPE_CYCLE_COUNTER(STAT_APINative_UpdateScene)
+					Result = PxrAudioSpatializer_UpdateScene(Context);
+				}
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::UpdateScene(PxrAudioSpatializer_Context* Ctx)
+		PxrAudioSpatializer_Result APINative::SetDopplerEffect(int SourceId, int On)
 		{
-			return PxrAudioSpatializer_UpdateScene(Ctx);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetDopplerEffect(Context, SourceId, On);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetDopplerEffect(PxrAudioSpatializer_Context* Ctx, int SourceId, int On)
+		PxrAudioSpatializer_Result APINative::SetPlaybackMode(
+			PxrAudioSpatializer_PlaybackMode PlaybackMode)
 		{
-			return PxrAudioSpatializer_SetDopplerEffect(Ctx, SourceId, On);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetPlaybackMode(Context, PlaybackMode);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetPlaybackMode(PxrAudioSpatializer_Context* Ctx,
-		                                                      PxrAudioSpatializer_PlaybackMode PlaybackMode)
+		PxrAudioSpatializer_Result APINative::SetLoudspeakerArray(
+			const float* Positions,
+			int NumLoudspeakers)
 		{
-			return PxrAudioSpatializer_SetPlaybackMode(Ctx, PlaybackMode);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetLoudspeakerArray(Context, Positions, NumLoudspeakers);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetLoudspeakerArray(PxrAudioSpatializer_Context* Ctx,
-		                                                          const float* Positions,
-		                                                          int NumLoudspeakers)
-		{
-			return PxrAudioSpatializer_SetLoudspeakerArray(Ctx, Positions, NumLoudspeakers);
-		}
-
-		PxrAudioSpatializer_Result APINative::SetMappingMatrix(PxrAudioSpatializer_Context* Ctx, const float* Matrix,
+		PxrAudioSpatializer_Result APINative::SetMappingMatrix(const float* Matrix,
 		                                                       int NumInputChannels, int NumOutputChannels)
 		{
-			return PxrAudioSpatializer_SetMappingMatrix(Ctx, Matrix, NumInputChannels, NumOutputChannels);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetMappingMatrix(Context, Matrix, NumInputChannels, NumOutputChannels);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetAmbisonicOrientation(PxrAudioSpatializer_Context* Ctx,
-		                                                              const float* Front,
-		                                                              const float* Up)
+		PxrAudioSpatializer_Result APINative::SetAmbisonicOrientation(
+			const float* Front,
+			const float* Up)
 		{
-			return PxrAudioSpatializer_SetAmbisonicOrientation(Ctx, Front, Up);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetAmbisonicOrientation(Context, Front, Up);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetListenerPosition(PxrAudioSpatializer_Context* Ctx,
-		                                                          const float* Position)
+		PxrAudioSpatializer_Result APINative::SetListenerPosition(
+			const float* Position)
 		{
-			return PxrAudioSpatializer_SetListenerPosition(Ctx, Position);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetListenerPosition(Context, Position);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetListenerOrientation(PxrAudioSpatializer_Context* Ctx,
-		                                                             const float* Front,
-		                                                             const float* Up)
+		PxrAudioSpatializer_Result APINative::SetListenerOrientation(
+			const float* Front,
+			const float* Up)
 		{
-			return PxrAudioSpatializer_SetListenerOrientation(Ctx, Front, Up);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetListenerOrientation(Context, Front, Up);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetListenerPose(PxrAudioSpatializer_Context* Ctx, const float* Position,
+		PxrAudioSpatializer_Result APINative::SetListenerPose(const float* Position,
 		                                                      const float* Front, const float* Up)
 		{
-			return PxrAudioSpatializer_SetListenerPose(Ctx, Position, Front, Up);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetListenerPose(Context, Position, Front, Up);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetSourcePosition(PxrAudioSpatializer_Context* Ctx, int SourceId,
+		PxrAudioSpatializer_Result APINative::SetSourcePosition(int SourceId,
 		                                                        const float* Position)
 		{
-			return PxrAudioSpatializer_SetSourcePosition(Ctx, SourceId, Position);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetSourcePosition(Context, SourceId, Position);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetSourceGain(PxrAudioSpatializer_Context* Ctx, int SourceId, float Gain)
+		PxrAudioSpatializer_Result APINative::SetSourceGain(int SourceId, float Gain)
 		{
-			return PxrAudioSpatializer_SetSourceGain(Ctx, SourceId, Gain);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetSourceGain(Context, SourceId, Gain);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::SetSourceSize(PxrAudioSpatializer_Context* Ctx, int SourceId,
+		PxrAudioSpatializer_Result APINative::SetSourceSize(int SourceId,
 		                                                    float VolumetricSize)
 		{
-			return PxrAudioSpatializer_SetSourceSize(Ctx, SourceId, VolumetricSize);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_SetSourceSize(Context, SourceId, VolumetricSize);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::UpdateSourceMode(PxrAudioSpatializer_Context* Ctx, int SourceId,
+		PxrAudioSpatializer_Result APINative::UpdateSourceMode(int SourceId,
 		                                                       PxrAudioSpatializer_SourceMode Mode)
 		{
-			return PxrAudioSpatializer_UpdateSourceMode(Ctx, SourceId, Mode);
+			PxrAudioSpatializer_Result Result = PASP_SUCCESS;
+			if (ContextDestructionMutex.try_lock_shared())
+			{
+				Result = PxrAudioSpatializer_UpdateSourceMode(Context, SourceId, Mode);
+				ContextDestructionMutex.unlock_shared();
+			}
+			return Result;
 		}
 
-		PxrAudioSpatializer_Result APINative::Destroy(PxrAudioSpatializer_Context* Ctx)
+		PxrAudioSpatializer_Result APINative::Destroy()
 		{
-			return PxrAudioSpatializer_Destroy(Ctx);
+			ContextDestructionMutex.lock();
+			const auto Result = PxrAudioSpatializer_Destroy(Context);
+			Context = nullptr;
+			ContextDestructionMutex.unlock();
+			return Result;
 		}
 	}
 }

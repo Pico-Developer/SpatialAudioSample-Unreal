@@ -1,5 +1,10 @@
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
+
 #pragma once
 #include "CoreMinimal.h"
+#if WITH_EDITOR
+#include "Editor.h"
+#endif
 #include "IAudioExtensionPlugin.h"
 #include "PicoSpatialAudioEnums.h"
 #include "pxr_audio_spatializer_types.h"
@@ -28,6 +33,11 @@ public:
 		meta = (ClampMin = "0.0", ClampMax = "24.0", UIMin = "0.0", UIMax = "24.0"))
 	float SourceGainDb;
 
+	// Reflection gain of the sound source (in dBFS).
+	UPROPERTY(GlobalConfig, EditAnywhere, Category = "SpatializationSettings",
+		meta = (ClampMin = "-120.0", ClampMax = "48.0", UIMin = "-120.0", UIMax = "48.0"))
+	float ReflectionGainDb;
+	
 	// Volumetric Size (Radius) of the sound source (in meters).
 	UPROPERTY(GlobalConfig, EditAnywhere, Category = "SpatializationSettings",
 		meta = (ClampMin = "0.0", ClampMax = "100000.0", UIMin = "0.0", UIMax = "100000.0"))
@@ -54,9 +64,27 @@ public:
 	DistanceAttenuationCallback DirectSoundDistanceAttenuationCallback;
 	DistanceAttenuationCallback IndirectSoundDistanceAttenuationCallback;
 
+	UPROPERTY(GlobalConfig, EditAnywhere, Category = "SpatializationSettings|Directivity",
+		meta = (ClampMin = "0.0", ClampMax = "1.0", UIMin = "0.0", UIMax = "1.0"))
+	float DirectivityAlpha;
+
+	UPROPERTY(GlobalConfig, EditAnywhere, Category = "SpatializationSettings|Directivity",
+		meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float DirectivityOrder;
+
+	UPROPERTY(EditAnywhere, Category = "SpatializationSettings|Directivity")
+	bool bVisualizePolarPattern;
+
+	UPROPERTY(EditAnywhere, Category = "SpatializationSettings|Directivity")
+	UMaterial* PolarPatternMaterial;
+
 	// Sets the sound source gain, applies, and updates
 	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
 	void SetSoundSourceGain(float GainDb);
+
+	// Sets the sound source reflection gain, applies, and updates
+	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
+	void SetSoundSourceReflectionGain(float GainDb);
 
 	// Sets the sound source volumetric size (radius), applies, and updates
 	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
@@ -65,5 +93,19 @@ public:
 	// Sets the sound source attenuation distance (meters), applies, and updates
 	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
 	void SetSoundSourceAttenuationDistance(float Min, float Max);
+
+	// Sets on/off status of source doppler effect, applies, and updates
+	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
+	void SetSoundSourceDoppler(bool On);
+
+	// Sets source directivity, applies, and updates
+	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
+	void SetSoundSourceDirectivity(float Alpha, float Order);
+
+	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
+	void SetSoundSourcePolarPatternVisualization(bool OnOff);
+
+	UFUNCTION(BlueprintCallable, Category = "PicoSpatialAudio|SoundSourceSpatializationSettings")
+	void SetSoundSourcePolarPatternMaterial(UMaterial* Material);
 };
 

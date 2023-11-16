@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.4.1",
+	"VersionName": "0.8.2.20231026",
 	"FriendlyName": "PicoSpatialAudio",
 	"Description": "Provide sound spatialization and environmental acoustics simulation for developers",
 	"Category": "Audio",
@@ -35,6 +35,12 @@
 				"Mac",
 				"Win64"
 			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
 		}
 	]
 }

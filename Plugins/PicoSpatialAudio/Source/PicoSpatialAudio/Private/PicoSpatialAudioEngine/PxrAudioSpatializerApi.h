@@ -1,3 +1,5 @@
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
+
 #pragma once
 #include "pxr_audio_spatializer_types.h"
 
@@ -13,21 +15,19 @@ namespace Pxr_Audio
 			virtual ~API() = default;
 
 			virtual const char* GetVersion(int* Major, int* Minor, int* Patch) = 0;
-			virtual PxrAudioSpatializer_Result CreateContext(PxrAudioSpatializer_Context** Ctx,
-			                                                 PxrAudioSpatializer_RenderingMode Mode,
+			virtual PxrAudioSpatializer_Result CreateContext(PxrAudioSpatializer_RenderingMode Mode,
 			                                                 size_t FramesPerBuffer,
 			                                                 size_t SampleRate) = 0;
-			virtual PxrAudioSpatializer_Result InitializeContext(PxrAudioSpatializer_Context* Ctx) = 0;
-			virtual PxrAudioSpatializer_Result SubmitMesh(PxrAudioSpatializer_Context* Ctx,
-			                                              const float* Vertices,
-			                                              int VerticesCount,
-			                                              const int* Indices,
-			                                              int IndicesCount,
-			                                              PxrAudioSpatializer_AcousticsMaterial
-			                                              Material,
-			                                              int* GeometryId) = 0;
+			virtual PxrAudioSpatializer_Result InitializeContext() = 0;
+			virtual PxrAudioSpatializer_Result SubmitMesh(
+				const float* Vertices,
+				int VerticesCount,
+				const int* Indices,
+				int IndicesCount,
+				PxrAudioSpatializer_AcousticsMaterial
+				Material,
+				int* GeometryId) = 0;
 			virtual PxrAudioSpatializer_Result SubmitMeshAndMaterialFactor(
-				PxrAudioSpatializer_Context* Ctx,
 				const float* Vertices,
 				int VerticesCount,
 				const int* Indices,
@@ -36,20 +36,32 @@ namespace Pxr_Audio
 				float ScatteringFactor,
 				float TransmissionFactor,
 				int* GeometryId) = 0;
+			virtual PxrAudioSpatializer_Result SubmitMeshWithConfig(
+				const float* Vertices,
+				int VerticesCount,
+				const int* Indices,
+				int IndicesCount,
+				const PxrAudioSpatializer_AcousticMeshConfig* Config,
+				int* GeometryId) = 0;
+			virtual PxrAudioSpatializer_Result RemoveMesh(int GeometryId) = 0;
+			virtual PxrAudioSpatializer_Result SetMeshEnable(int GeometryId, bool Enable) = 0;
+			virtual PxrAudioSpatializer_Result
+			SetMeshConfig(int GeometryId,
+			              const PxrAudioSpatializer_AcousticMeshConfig* Config,
+			              unsigned int PropertyMask = PASP_MeshProperty_All) = 0;
 			virtual PxrAudioSpatializer_Result GetAbsorptionFactor(
 				PxrAudioSpatializer_AcousticsMaterial Material, float* AbsorptionFactor) = 0;
 			virtual PxrAudioSpatializer_Result GetScatteringFactor(
 				PxrAudioSpatializer_AcousticsMaterial Material, float* ScatteringFactor) = 0;
 			virtual PxrAudioSpatializer_Result GetTransmissionFactor(
 				PxrAudioSpatializer_AcousticsMaterial Material, float* TransmissionFactor) = 0;
-			virtual PxrAudioSpatializer_Result CommitScene(PxrAudioSpatializer_Context* Ctx) = 0;
-			virtual PxrAudioSpatializer_Result AddSource(PxrAudioSpatializer_Context* Ctx,
-			                                             PxrAudioSpatializer_SourceMode SourceMode,
-			                                             const float* Position,
-			                                             int* SourceId,
-			                                             bool bIsAsync = false) = 0;
+			virtual PxrAudioSpatializer_Result CommitScene() = 0;
+			virtual PxrAudioSpatializer_Result AddSource(
+				PxrAudioSpatializer_SourceMode SourceMode,
+				const float* Position,
+				int* SourceId,
+				bool bIsAsync = false) = 0;
 			virtual PxrAudioSpatializer_Result AddSourceWithOrientation(
-				PxrAudioSpatializer_Context* Ctx,
 				PxrAudioSpatializer_SourceMode Mode,
 				const float* Position,
 				const float* Front,
@@ -57,88 +69,93 @@ namespace Pxr_Audio
 				float Radius,
 				int* SourceId,
 				bool bIsAsync = false) = 0;
-			virtual PxrAudioSpatializer_Result AddSourceWithConfig(PxrAudioSpatializer_Context* Ctx,
-			                                                       const PxrAudioSpatializer_SourceConfig* SourceConfig,
-			                                                       int* SourceId,
-			                                                       bool bIsAsync = false) = 0;
+			virtual PxrAudioSpatializer_Result AddSourceWithConfig(
+				const PxrAudioSpatializer_SourceConfig* SourceConfig,
+				int* SourceId,
+				bool bIsAsync = false) = 0;
+			virtual PxrAudioSpatializer_Result SetSourceConfig(const int SourceId,
+			                                                   const PxrAudioSpatializer_SourceConfig* SourceConfig,
+			                                                   unsigned int PropertyMask = PASP_SourceProperty_All) = 0;
+			virtual PxrAudioSpatializer_Result GetSourceConfig(const int source_id,
+			                                                   PxrAudioSpatializer_SourceConfig* source_config) = 0;
 			virtual PxrAudioSpatializer_Result SetSourceAttenuationMode(
-				PxrAudioSpatializer_Context* Ctx,
 				int SourceId,
 				PxrAudioSpatializer_SourceAttenuationMode Mode,
 				DistanceAttenuationCallback DirectDistanceAttenuationCallback = nullptr,
 				DistanceAttenuationCallback IndirectDistanceAttenuationCallback = nullptr) = 0;
 			virtual PxrAudioSpatializer_Result SetSourceRange(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, float RangeMin, float RangeMax) = 0;
+				int SourceId, float RangeMin, float RangeMax) = 0;
 			virtual PxrAudioSpatializer_Result RemoveSource(
-				PxrAudioSpatializer_Context* Ctx, int SourceId) = 0;
-			virtual PxrAudioSpatializer_Result SubmitSourceBuffer(PxrAudioSpatializer_Context* Ctx,
-			                                                      int SourceId,
-			                                                      const float* InputBufferPtr,
-			                                                      size_t NumFrames) = 0;
+				int SourceId) = 0;
+			virtual PxrAudioSpatializer_Result SubmitSourceBuffer(
+				int SourceId,
+				const float* InputBufferPtr,
+				size_t NumFrames) = 0;
 			virtual PxrAudioSpatializer_Result
-			SubmitAmbisonicChannelBuffer(PxrAudioSpatializer_Context* Ctx,
-			                             const float* AmbisonicChannelBuffer,
-			                             int Order,
-			                             int Degree,
-			                             PxrAudioSpatializer_AmbisonicNormalizationType NormType,
-			                             float Gain) = 0;
+			SubmitAmbisonicChannelBuffer(
+				const float* AmbisonicChannelBuffer,
+				int Order,
+				int Degree,
+				PxrAudioSpatializer_AmbisonicNormalizationType NormType,
+				float Gain,
+				int ParentAmbisonicOrder) = 0;
 			virtual PxrAudioSpatializer_Result SubmitInterleavedAmbisonicBuffer(
-				PxrAudioSpatializer_Context* Ctx,
+
 				const float* AmbisonicBuffer,
 				int AmbisonicOrder,
 				PxrAudioSpatializer_AmbisonicNormalizationType NormType,
 				float Gain) = 0;
-			virtual PxrAudioSpatializer_Result SubmitMatrixInputBuffer(PxrAudioSpatializer_Context* Ctx,
-			                                                           const float* InputBuffer,
-			                                                           int InputChannelIndex) = 0;
+			virtual PxrAudioSpatializer_Result SubmitMatrixInputBuffer(
+				const float* InputBuffer,
+				int InputChannelIndex) = 0;
 			virtual PxrAudioSpatializer_Result GetInterleavedBinauralBuffer(
-				PxrAudioSpatializer_Context* Ctx,
+
 				float* OutputBufferPtr,
 				size_t NumFrames,
 				bool bIsAccumulative = false) = 0;
-			virtual PxrAudioSpatializer_Result GetPlanarBinauralBuffer(PxrAudioSpatializer_Context* Ctx,
-			                                                           float* const * OutputBufferPtr,
-			                                                           size_t NumFrames,
-			                                                           bool bIsAccumulative = false) = 0;
+			virtual PxrAudioSpatializer_Result GetPlanarBinauralBuffer(
+				float* const * OutputBufferPtr,
+				size_t NumFrames,
+				bool bIsAccumulative = false) = 0;
 			virtual PxrAudioSpatializer_Result GetInterleavedLoudspeakersBuffer(
-				PxrAudioSpatializer_Context* Ctx,
+
 				float* OutputBufferPtr,
 				size_t NumFrames) = 0;
 			virtual PxrAudioSpatializer_Result GetPlanarLoudspeakersBuffer(
-				PxrAudioSpatializer_Context* Ctx,
+
 				float* const * OutputBufferPtr,
 				size_t NumFrames) = 0;
-			virtual PxrAudioSpatializer_Result UpdateScene(PxrAudioSpatializer_Context* Ctx) = 0;
+			virtual PxrAudioSpatializer_Result UpdateScene() = 0;
 			virtual PxrAudioSpatializer_Result SetDopplerEffect(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, int On) = 0;
+				int SourceId, int On) = 0;
 			virtual PxrAudioSpatializer_Result SetPlaybackMode(
-				PxrAudioSpatializer_Context* Ctx, PxrAudioSpatializer_PlaybackMode PlaybackMode) = 0;
+				PxrAudioSpatializer_PlaybackMode PlaybackMode) = 0;
 			virtual PxrAudioSpatializer_Result SetLoudspeakerArray(
-				PxrAudioSpatializer_Context* Ctx, const float* Positions, int NumLoudspeakers) = 0;
-			virtual PxrAudioSpatializer_Result SetMappingMatrix(PxrAudioSpatializer_Context* Ctx,
-			                                                    const float* Matrix,
-			                                                    int NumInputChannels,
-			                                                    int NumOutputChannels) = 0;
+				const float* Positions, int NumLoudspeakers) = 0;
+			virtual PxrAudioSpatializer_Result SetMappingMatrix(
+				const float* Matrix,
+				int NumInputChannels,
+				int NumOutputChannels) = 0;
 			virtual PxrAudioSpatializer_Result SetAmbisonicOrientation(
-				PxrAudioSpatializer_Context* Ctx, const float* Front, const float* Up) = 0;
+				const float* Front, const float* Up) = 0;
 			virtual PxrAudioSpatializer_Result SetListenerPosition(
-				PxrAudioSpatializer_Context* Ctx, const float* Position) = 0;
+				const float* Position) = 0;
 			virtual PxrAudioSpatializer_Result SetListenerOrientation(
-				PxrAudioSpatializer_Context* Ctx, const float* Front, const float* Up) = 0;
-			virtual PxrAudioSpatializer_Result SetListenerPose(PxrAudioSpatializer_Context* Ctx,
-			                                                   const float* Position,
-			                                                   const float* Front,
-			                                                   const float* Up) = 0;
+				const float* Front, const float* Up) = 0;
+			virtual PxrAudioSpatializer_Result SetListenerPose(
+				const float* Position,
+				const float* Front,
+				const float* Up) = 0;
 			virtual PxrAudioSpatializer_Result SetSourcePosition(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, const float* Position) = 0;
+				int SourceId, const float* Position) = 0;
 			virtual PxrAudioSpatializer_Result SetSourceGain(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, float Gain) = 0;
+				int SourceId, float Gain) = 0;
 			virtual PxrAudioSpatializer_Result SetSourceSize(
-				PxrAudioSpatializer_Context* Ctx, int SourceId, float VolumetricSize) = 0;
-			virtual PxrAudioSpatializer_Result UpdateSourceMode(PxrAudioSpatializer_Context* Ctx,
-			                                                    int SourceId,
-			                                                    PxrAudioSpatializer_SourceMode Mode) = 0;
-			virtual PxrAudioSpatializer_Result Destroy(PxrAudioSpatializer_Context* Ctx) = 0;
+				int SourceId, float VolumetricSize) = 0;
+			virtual PxrAudioSpatializer_Result UpdateSourceMode(
+				int SourceId,
+				PxrAudioSpatializer_SourceMode Mode) = 0;
+			virtual PxrAudioSpatializer_Result Destroy() = 0;
 		};
 	}
 }

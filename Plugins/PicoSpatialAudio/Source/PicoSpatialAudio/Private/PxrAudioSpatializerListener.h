@@ -1,3 +1,5 @@
+//  Copyright © 2015-2023 Pico Technology Co., Ltd. All Rights Reserved.
+
 #pragma once
 #include <atomic>
 #include "AudioPluginUtilities.h"
@@ -26,7 +28,7 @@ namespace Pxr_Audio
 
 			static std::atomic<bool> bNeedSceneCommit;
 		private:
-			const FAudioDevice* OwningAudioDevice;
+			FAudioDevice* OwningAudioDevice;
 
 			FPicoSpatialAudioModule* PicoSpatialAudioModule;
 			FSpatialization* SpatializationPtr;

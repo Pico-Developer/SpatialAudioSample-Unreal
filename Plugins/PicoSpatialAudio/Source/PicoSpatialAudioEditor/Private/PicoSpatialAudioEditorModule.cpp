@@ -52,11 +52,16 @@ EEditorBuildResult FPicoSpatialAudioEditorModule::BuildAllNecessaryAcousticMeshe
 	       *BuildId.ToString());
 	for (TActorIterator<AActor> Actor(World); Actor; ++Actor)
 	{
-		auto* Geometry = static_cast<UPicoSpatialAudioSceneGeometryComponent*>(Actor->GetComponentByClass(
-			UPicoSpatialAudioSceneGeometryComponent::StaticClass()));
-		if (Geometry != nullptr)
+		TArray<UActorComponent*> Components;
+		Actor->GetComponents(
+			UPicoSpatialAudioSceneGeometryComponent::StaticClass(), Components);
+		for (auto* Component : Components)
 		{
-			Geometry->BakeMesh();
+			auto* Geometry = static_cast<UPicoSpatialAudioSceneGeometryComponent*>(Component);
+			if (Geometry != nullptr)
+			{
+				Geometry->BakeMesh();
+			}
 		}
 	}
 
